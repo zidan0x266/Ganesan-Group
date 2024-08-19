@@ -1,0 +1,10 @@
+func=homopoly
+top=topol.tpr
+trj=traj.xtc
+begin=100
+end=200
+cutoff=6.3
+counterN=8
+nt=2
+anion=PF
+cation=IM

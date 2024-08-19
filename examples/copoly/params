@@ -1,0 +1,12 @@
+func=copoly
+top=topol.tpr
+trj=traj.xtc
+begin=100
+end=120
+cutoff=6.3
+Icutoff=6.1
+counterN=8
+nt=2
+anion=PF
+cation=IM
+beadiny=ES
