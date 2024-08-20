@@ -95,6 +95,11 @@ elif len(pair) == 0:
     
     if count == 50:
         Finalize = True
+
+
+
+    if Finalize == False:
+        exit()
 elif os.path.isfile('xlink_tracker.txt'):
     os.remove('xlink_tracker.txt')
 
