@@ -1,0 +1,11 @@
+#!/bin/bash
+
+filename=$1
+
+rm ${filename}_tri.top ${filename}h.gro ${filename}m.gro ${filename}t.gro
+
+perl ../mktop.pl -i ${filename}_tri.pdb -conect yes -o ${filename}_tri.top -ff opls -c ${filename}_charge.dat
+
+gmx editconf -f ${filename}h.pdb -o ${filename}h.gro
+gmx editconf -f ${filename}m.pdb -o ${filename}m.gro
+gmx editconf -f ${filename}t.pdb -o ${filename}t.gro

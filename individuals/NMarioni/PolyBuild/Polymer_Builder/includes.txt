@@ -1,0 +1,6 @@
+;Include Water Topology
+#include "oplsaa.ff/tip4pew.itp"
+
+;Include ion topology
+#include "../../mdp/ions_0.85.itp"
+
