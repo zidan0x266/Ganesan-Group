@@ -1,4 +1,4 @@
-# This script is designed to crosslink MPT and TMC monomers to create a crosslinked polyamide membrane
+# This script is designed to crosslink MPD and TMC monomers to create a crosslinked polyamide membrane
 # This script can be adapted to crosslinked different membranes
 
 import builder_io # Provided in the mdp folder
@@ -15,7 +15,7 @@ from sys import argv
 script, gro_file, out_gro, top_file, out_top = argv
 
 # This is a topology file after crosslinking the two monomers, here MPD and TMC
-Charge_TOP = builder_io.GroTopFile('../../mdp/MPDTMC.top'); Charge_TOP.read()
+Charge_TOP = builder_io.GroTopFile('mdp/MPDTMC.top'); Charge_TOP.read()
 
 type_arr = []; charge_arr = []
 for i in Charge_TOP.atoms:
@@ -66,7 +66,18 @@ pair, dist = distances.capped_distance(a1, a2, 4.5, box=cell); del a1; del a2
 print("Current Crosslink Density")
 print(1 - (n_a1/1380.0))
 
-if len(pair) == 0:
+Finalize = False
+# Define the desired degree of crosslinking, where (1 - (n_a1/1380.0)) = 0.90 defines that point at 90% of possible crosslinks are formed
+if (1.0 - (n_a1/1380.0)) >= 0.90:
+    print("Desired Crosslink Density Achieved")
+    print(1 - (n_a1/1380.0))
+    Finalize = True
+
+    # The code below is to track the Crosslinking Process paired with the code described above
+    count = 50
+    with open('xlink_tracker.txt','w') as f:
+        f.write(str(count))
+elif len(pair) == 0:
     print("No Crosslinked Formed")
 
 
@@ -81,23 +92,18 @@ if len(pair) == 0:
     
     with open('xlink_tracker.txt','w') as f:
         f.write(str(count))
-
-
-
-    exit()
-# Define the desired degree of crosslinking, where (1 - (n_a1/1380.0)) = 0.90 defines that point at 90% of possible crosslinks are formed
-elif (1.0 - (n_a1/1380.0)) == 0.90:
-    print("Desired Crosslink Density Achieved")
-    print(1 - (n_a1/1380.0))
-
-    # The code below is to track the Crosslinking Process paired with the code described above
-    count = 50
-    with open('xlink_tracker.txt','w') as f:
-        f.write(str(count))
-
-
     
-    # The remainder of this if statement deletes un-crosslinked monomer. This can be monomer that forms no crosslinks, or polymer chains that are not crosslinked to the continuous membrane network
+    if count == 50:
+        Finalize = True
+elif os.path.isfile('xlink_tracker.txt'):
+    os.remove('xlink_tracker.txt')
+
+if Finalize:
+    # This if statement deletes un-crosslinked monomer. This can be monomer that forms no crosslinks, or polymer chains that are not crosslinked to the continuous membrane network
+    # If you do not want any monomer deleted, comment out everything inside this if statement except for exit()
+
+
+
     # This section finds all monomer that formed no crosslinks for removal from the system
     track_a1 = []; tracker = 0; counter = 0
     for i in uta.select_atoms(uta_a1):
@@ -112,7 +118,7 @@ elif (1.0 - (n_a1/1380.0)) == 0.90:
         elif counter > len(names_a1):
             print("Error in Processing Number of Non-Xlinked Molecules")
             exit()
-
+    
     track_a2 = []; tracker = 0; counter = 0
     for i in uta.select_atoms(uta_a2):
         i = i.resid
@@ -141,16 +147,39 @@ elif (1.0 - (n_a1/1380.0)) == 0.90:
 
 
 
-    # This section is incomplete at this time!!!
-    # This section find all atoms that are continuously bonded to each other. All atoms that are not a part of the largest network are deleted.
-    #G = nx.Graph(); G.add_nodes_from(range(1,len(TOP.atoms)))
-    #for a in TOP.bonds_def:
-    #    for b in TOP.bonds_def[a]:
-    #        G.add_edge(a,b)
-    #
-    #for z in sorted(nx.connected_components(G), key = len, reverse=True):
-    #    z = np.array(list(z))
-    #    print(len(z))
+    # This section find all atoms that are continuously bonded to each other. All atoms that are not a part of the largest network (the continuous membrane) are deleted.
+    # This section makes the above section for un-crosslinked monomers redundant
+    track_a1 = []; track_a2 = []
+
+    G = nx.Graph(); G.add_nodes_from(range(1,len(TOP.atoms)))
+    for a in TOP.bonds_def:
+        for b in TOP.bonds_def[a]:
+            G.add_edge(a,b)
+    
+    for i, z in enumerate(sorted(nx.connected_components(G), key = len, reverse=True)):
+        z = np.array(list(z))
+
+        # The first group is the main crosslinked membrane -> DO NOT DELETE ATOMS
+        if i == 0:
+            print("Number of Atoms in the continuous membrane: " + str(len(z)))
+            continue
+
+        print("Number of Atoms in monomer/polymer cluster: " + str(len(z)))
+        for z_j in z:
+            if TOP.atoms[z_j].chain_name == res_a1:
+                if TOP.atoms[z_j].chain_idx in track_a1:
+                    continue
+                track_a1.append(TOP.atoms[z_j].chain_idx)
+            elif TOP.atoms[z_j].chain_name == res_a2:
+                if TOP.atoms[z_j].chain_idx in track_a2:
+                    continue
+                track_a2.append(TOP.atoms[z_j].chain_idx)
+    
+    print('Type 1 Molecules not crosslinked to the continuous membrane: ')
+    print(track_a1)
+    print('Type 2 Molecules not crosslinked to the continuous membrane: ')
+    print(track_a2)
+    print('Removing Molecules')
 
 
 
@@ -213,12 +242,12 @@ elif (1.0 - (n_a1/1380.0)) == 0.90:
             del TOP.pairs[p]
             TOP.pairs[(p[0] - len(deleted[deleted < p[0]]), p[1] - len(deleted[deleted < p[1]]))] = pt
     del p; del pt
-    
+
     GRO.write(out_gro); TOP.write(out_top)
 
+
+
     exit()
-elif os.path.isfile('xlink_tracker.txt'):
-    os.remove('xlink_tracker.txt')
 
 # Two crosslinkers from a1 may try to bond with the same crosslinker of a2, or vice versa. Only bond the closest pair of crosslinkers
 print("Number of Pairs (Including Multi-Pairs): " + str(len(pair)))
