@@ -1,2 +1,0 @@
-dvb_syn.fchk 0.5
-dvb_iso.fchk 0.5

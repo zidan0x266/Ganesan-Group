@@ -1,7 +1,0 @@
-#include "oplsaa.ff/forcefield.itp"
-
-
-[ moleculetype ]
-; Name            nrexcl
-MOL             3
-

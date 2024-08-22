@@ -1,2 +1,0 @@
-sps_syn.fchk 0.5
-sps_iso.fchk 0.5
